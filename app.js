@@ -46,7 +46,7 @@ async function downloadImage(url, outputPath) {
 async function removeBackground(imagePath) {
   const apiKey = "TV6rX7ejctkYRMCDTLZ3oiMR"; // استبدل YOUR_API_KEY بمفتاح API الخاص بك
   const url = "https://api.remove.bg/v1.0/removebg";
-
+ 
   const formData = new FormData();
   formData.append("image_file", fs.createReadStream(imagePath));
   formData.append("size", "auto");
