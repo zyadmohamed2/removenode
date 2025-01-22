@@ -2,10 +2,29 @@ const express = require("express");
 const sharp = require("sharp");
 const axios = require("axios");
 const fs = require("fs");
+const path = require("path");
 const FormData = require("form-data");
 
 const app = express();
 app.use(express.json());
+const cors = require('cors');
+
+// تفعيل CORS لجميع المجالات (يمكنك تحديد نطاقات معينة بدلاً من *)
+app.use(cors());
+
+// أو يمكنك تخصيص الإعدادات كما يلي:
+app.use(cors({
+  origin: '*',  // يسمح لجميع المواقع
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+
+// إنشاء مجلد "uploads" إذا لم يكن موجودًا
+const uploadDir = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir);
+}
 
 // دالة لتنزيل الصورة من الرابط
 async function downloadImage(url, outputPath) {
@@ -42,7 +61,9 @@ async function removeBackground(imagePath) {
     });
     return response.data; // الصورة بدون خلفية
   } catch (error) {
-    throw new Error(`Failed to remove background: ${error.message}`);
+    throw new Error(
+      `Failed to remove background: ${error.response?.data || error.message}`
+    );
   }
 }
 
@@ -54,8 +75,8 @@ app.post("/merge-images", async (req, res) => {
     return res.status(400).send("يرجى تقديم روابط الصور المطلوبة.");
   }
 
-  const userImagePath = "uploads/user_image.png";
-  const backgroundImagePath = "uploads/background_image.png";
+  const userImagePath = path.join(uploadDir, "user_image.png");
+  const backgroundImagePath = path.join(uploadDir, "background_image.png");
 
   try {
     // تنزيل الصور من الروابط
@@ -66,7 +87,7 @@ app.post("/merge-images", async (req, res) => {
     const userImageNoBgBuffer = await removeBackground(userImagePath);
 
     // حفظ الصورة بدون خلفية مؤقتًا
-    const userImageNoBgPath = `uploads/user_no_bg.png`;
+    const userImageNoBgPath = path.join(uploadDir, "user_no_bg.png");
     fs.writeFileSync(userImageNoBgPath, userImageNoBgBuffer);
 
     // الحصول على أبعاد صورة الخلفية
@@ -74,16 +95,16 @@ app.post("/merge-images", async (req, res) => {
     const { width, height } = backgroundMetadata;
 
     // تقليص حجم صورة المستخدم
-    const resizedUserImagePath = `uploads/user_resized.png`;
+    const resizedUserImagePath = path.join(uploadDir, "user_resized.png");
     await sharp(userImageNoBgPath)
-      .resize(Math.floor(width * 0.6), Math.floor(height * 0.7)) // تقليص الحجم
+      .resize(Math.floor(width * 0.6), Math.floor(height * 0.7))
       .toFile(resizedUserImagePath);
 
     // دمج الصور
-    const outputPath = `uploads/final_image.jpg`;
+    const outputPath = path.join(uploadDir, "final_image.jpg");
     await sharp(backgroundImagePath)
       .composite([{ input: resizedUserImagePath, gravity: "center" }])
-      .jpeg({ quality: 80 }) // تقليل الجودة
+      .jpeg({ quality: 80 })
       .toFile(outputPath);
 
     // حفظ الصورة النهائية في مجلد ثابت
@@ -96,18 +117,27 @@ app.post("/merge-images", async (req, res) => {
     res.status(500).send(`حدث خطأ أثناء معالجة الصور: ${error.message}`);
   } finally {
     // حذف الصور المؤقتة
-    try {
-      fs.unlinkSync(userImagePath);
-      fs.unlinkSync(backgroundImagePath);
-      console.log("تم حذف الصور المؤقتة.");
-    } catch (error) {
-      console.error("Failed to delete temporary files:", error.message);
-    }
+    const filesToDelete = [
+      userImagePath,
+      backgroundImagePath,
+      path.join(uploadDir, "user_no_bg.png"),
+      path.join(uploadDir, "user_resized.png"),
+    ];
+
+    filesToDelete.forEach((file) => {
+      try {
+        if (fs.existsSync(file)) {
+          fs.unlinkSync(file);
+        }
+      } catch (error) {
+        console.error(`Failed to delete file ${file}:`, error.message);
+      }
+    });
   }
 });
 
 // تقديم الملفات من مجلد "uploads"
-app.use("/uploads", express.static("uploads"));
+app.use("/uploads", express.static(uploadDir));
 
 // بدء تشغيل السيرفر
 const PORT = 3000;
