@@ -108,7 +108,7 @@ app.post("/merge-images", async (req, res) => {
       .toFile(outputPath);
 
     // حفظ الصورة النهائية في مجلد ثابت
-    const finalImageUrl = `http://localhost:3000/uploads/final_image.jpg`;
+    const finalImageUrl = `https://removenode.onrender.com/uploads/final_image.jpg`;
 
     // إرسال رابط الصورة النهائية
     res.json({ imageUrl: finalImageUrl });
