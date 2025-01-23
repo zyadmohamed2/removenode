@@ -8,6 +8,11 @@ const FormData = require("form-data");
 const app = express();
 app.use(express.json());
 const cors = require('cors');
+const https = require("https");
+
+const agent = new https.Agent({
+  rejectUnauthorized: false, // السماح بالاتصالات غير الآمنة
+});
 
 // تفعيل CORS لجميع المجالات (يمكنك تحديد نطاقات معينة بدلاً من *)
 app.use(cors());
@@ -52,6 +57,7 @@ async function removeBackground(imagePath) {
   try {
     const response = await axios.post(url, formData, {
       responseType: "arraybuffer",
+      httpsAgent: agent,
     });
     return response.data; // الصورة بدون خلفية
   } catch (error) {
@@ -94,15 +100,28 @@ app.post("/merge-images", async (req, res) => {
       .resize(Math.floor(width * 0.6), Math.floor(height * 0.7))
       .toFile(resizedUserImagePath);
 
+
+
+
+
+
+
+
+
+
+
+
+      const outputFileName = `final_image_${Date.now()}.jpg`; 
+
     // دمج الصور
-    const outputPath = path.join(uploadDir, "final_image.jpg");
+    const outputPath = path.join(uploadDir, outputFileName);
     await sharp(backgroundImagePath)
       .composite([{ input: resizedUserImagePath, gravity: "center" }])
       .jpeg({ quality: 80 })
       .toFile(outputPath);
 
     // حفظ الصورة النهائية في مجلد ثابت
-    const finalImageUrl = `https://removenode.onrender.com/uploads/final_image.jpg`;
+    const finalImageUrl = `https://removenode.onrender.com/uploads/${outputFileName}`;
 
     // إرسال رابط الصورة النهائية
     res.json({ imageUrl: finalImageUrl });
