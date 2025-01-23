@@ -44,19 +44,13 @@ async function downloadImage(url, outputPath) {
 
 // دالة لإزالة الخلفية باستخدام API remove.bg
 async function removeBackground(imagePath) {
-  const apiKey = "TV6rX7ejctkYRMCDTLZ3oiMR"; // استبدل YOUR_API_KEY بمفتاح API الخاص بك
-  const url = "https://api.remove.bg/v1.0/removebg";
+  const url = "https://157.230.97.17:5000/process-image";
  
   const formData = new FormData();
-  formData.append("image_file", fs.createReadStream(imagePath));
-  formData.append("size", "auto");
+  formData.append("user_image", fs.createReadStream(imagePath));
 
   try {
     const response = await axios.post(url, formData, {
-      headers: {
-        ...formData.getHeaders(),
-        "X-Api-Key": apiKey,
-      },
       responseType: "arraybuffer",
     });
     return response.data; // الصورة بدون خلفية
