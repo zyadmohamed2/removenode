@@ -49,7 +49,7 @@ async function downloadImage(url, outputPath) {
 
 // دالة لإزالة الخلفية باستخدام API remove.bg
 async function removeBackground(imagePath) {
-  const url = "https://157.230.97.17:5000/process-image";
+  const url = "https://213.186.174.124:5000/process-image";
  
   const formData = new FormData();
   formData.append("user_image", fs.createReadStream(imagePath));
@@ -99,20 +99,7 @@ app.post("/merge-images", async (req, res) => {
     await sharp(userImageNoBgPath)
       .resize(Math.floor(width * 0.6), Math.floor(height * 0.7))
       .toFile(resizedUserImagePath);
-
-
-
-
-
-
-
-
-
-
-
-
       const outputFileName = `final_image_${Date.now()}.jpg`; 
-
     // دمج الصور
     const outputPath = path.join(uploadDir, outputFileName);
     await sharp(backgroundImagePath)
